@@ -88,7 +88,8 @@ final class PixelPetView extends View {
         float size=dp(action==Action.RUN||action==Action.WALK||action==Action.BALL?142:136);
         float left=(getWidth()-size)/2f,top=getHeight()-size-dp(2);
         RectF target=new RectF(left,top,left+size,top+size);
-        c.save();if(!facingRight)c.scale(-1,1,getWidth()/2f,getHeight()/2f);
+        // The source artwork faces left. Mirror it only when travelling right.
+        c.save();if(facingRight)c.scale(-1,1,getWidth()/2f,getHeight()/2f);
         c.drawBitmap(sprites[index],null,target,paint);c.restore();
     }
 

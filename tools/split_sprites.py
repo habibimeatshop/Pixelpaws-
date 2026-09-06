@@ -53,8 +53,12 @@ def main() -> None:
         left, right = round(col * width / 4), round((col + 1) * width / 4)
         top, bottom = round(row * height / 4), round((row + 1) * height / 4)
         cell = sheet.crop((left, top, right, bottom))
-        cell = cell.resize((256, 256), Image.Resampling.NEAREST)
-        cell.save(OUT / f"{name}.png", optimize=True)
+        # Transparent safe area prevents paws, tail and motion accents from
+        # touching the Android drawable/window boundary during fast movement.
+        cell = cell.resize((224, 224), Image.Resampling.NEAREST)
+        padded = Image.new("RGBA", (256, 256), (0, 0, 0, 0))
+        padded.alpha_composite(cell, (16, 12))
+        padded.save(OUT / f"{name}.png", optimize=True)
 
     sheet.save(ROOT / "sprite-sheet-v0.3-transparent.png", optimize=True)
 
