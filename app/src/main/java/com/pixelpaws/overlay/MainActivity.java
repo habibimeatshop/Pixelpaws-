@@ -23,12 +23,12 @@ public class MainActivity extends Activity {
         LinearLayout root=new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setGravity(Gravity.CENTER_HORIZONTAL);
         root.setPadding(dp(28),dp(48),dp(28),dp(28)); root.setBackgroundColor(Color.rgb(255,248,239));
         TextView title=text("PIXEL PAWS",30,true); title.setTextColor(Color.rgb(70,58,68)); root.addView(title);
-        TextView cat=text("ฅ^•ﻌ•^ฅ",42,true); cat.setTextColor(Color.rgb(233,134,160)); root.addView(cat,margin(0,8,0,20));
-        root.addView(text("Kucing pixel kecil yang tinggal di layar HP-mu. Sentuh untuk mengelus, seret untuk memindahkan, atau buka menu mini untuk makan, bermain, dan tidur.",16,false),margin(0,0,0,24));
+        TextView cat=text("ฅ^•ﻌ•^ฅ",42,true); cat.setTextColor(Color.rgb(133,89,62)); root.addView(cat,margin(0,8,0,20));
+        root.addView(text("Kucing pixel cokelat yang hidup di bawah layar HP-mu. Ia bisa berjalan, berlari, bermain bola, lapar, tidur, dan meminta dimanja secara otomatis.",16,false),margin(0,0,0,24));
         status=text("",14,true); status.setTextColor(Color.rgb(91,77,86)); root.addView(status,margin(0,0,0,14));
         Button start=button("Tampilkan kucing"); start.setOnClickListener(v->startPet()); root.addView(start,full(0,0,0,10));
         Button stop=button("Sembunyikan kucing"); stop.setOnClickListener(v->{ stopService(new Intent(this,PetOverlayService.class)); updateStatus(); }); root.addView(stop,full(0,0,0,18));
-        TextView help=text("Cara bermain\n\n• Ketuk kucing: elus dan buka menu\n• Seret: pindahkan di layar\n• 🍗: beri makan (2 koin)\n• ★: bermain dan dapat koin\n• Zz / tekan lama: tidur\n\nCatatan: notifikasi kecil diperlukan Android agar pet tetap hidup di atas aplikasi lain.",14,false);
+        TextView help=text("Cara bermain\n\n• Kucing bergerak dan bermain sendiri\n• Ketuk kucing: elus dan buka menu\n• Seret: pindahkan ke kiri atau kanan\n• 🍗: beri makan (2 koin)\n• ●: ajak bermain bola dan dapat koin\n• ♡: manjakan kucing\n• Tekan lama: tidur\n\nCatatan: notifikasi kecil diperlukan Android agar pet tetap hidup di atas aplikasi lain.",14,false);
         help.setBackgroundColor(Color.rgb(255,238,224)); help.setPadding(dp(18),dp(18),dp(18),dp(18)); root.addView(help,full(0,0,0,0));
         setContentView(root); requestNotifications(); updateStatus();
     }
