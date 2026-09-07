@@ -89,6 +89,10 @@ final class PixelPetView extends View {
         float left=(getWidth()-size)/2f,top=getHeight()-size-dp(2);
         RectF target=new RectF(left,top,left+size,top+size);
         // The source artwork faces left. Mirror it only when travelling right.
+        // drawGroundShadow() uses a translucent Paint; reset it so that alpha
+        // never leaks into the character bitmap.
+        paint.setAlpha(255);
+        paint.setColor(Color.WHITE);
         c.save();if(facingRight)c.scale(-1,1,getWidth()/2f,getHeight()/2f);
         c.drawBitmap(sprites[index],null,target,paint);c.restore();
     }
