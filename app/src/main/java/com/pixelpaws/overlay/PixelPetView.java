@@ -20,10 +20,11 @@ final class PixelPetView extends View {
     private final PetState state;
     private final MotionListener motionListener;
     private final Random random=new Random();
-    private final Bitmap[] sprites=new Bitmap[16];
+    private final Bitmap[] sprites=new Bitmap[20];
     private final int[] spriteIds={
             R.drawable.cat_idle_1,R.drawable.cat_idle_2,R.drawable.cat_idle_3,R.drawable.cat_idle_4,
-            R.drawable.cat_walk_1,R.drawable.cat_walk_2,R.drawable.cat_run_1,R.drawable.cat_run_2,
+            R.drawable.cat_walk_1,R.drawable.cat_walk_2,R.drawable.cat_walk_3,R.drawable.cat_walk_4,
+            R.drawable.cat_run_1,R.drawable.cat_run_2,R.drawable.cat_run_3,R.drawable.cat_run_4,
             R.drawable.cat_ball_1,R.drawable.cat_ball_2,R.drawable.cat_hungry,R.drawable.cat_eat,
             R.drawable.cat_affection,R.drawable.cat_petted,R.drawable.cat_sleep_1,R.drawable.cat_sleep_2
     };
@@ -69,20 +70,20 @@ final class PixelPetView extends View {
     void turnAround(){facingRight=!facingRight;}
 
     @Override protected void onDraw(Canvas c){
-        super.onDraw(c);if(menuOpen)drawMenu(c);drawBubble(c);drawGroundShadow(c);drawCat(c);
+        super.onDraw(c);if(menuOpen)drawMenu(c);drawGroundShadow(c);drawCat(c);
     }
 
     private void drawCat(Canvas c){
         int index;
         switch(action){
-            case WALK:index=4+(frame/3)%2;break;
-            case RUN:index=6+(frame/2)%2;break;
-            case BALL:index=8+(frame/3)%2;break;
-            case HUNGRY:index=10;break;
-            case EAT:index=11;break;
-            case AFFECTION:index=12;break;
-            case PETTED:index=13;break;
-            case SLEEP:index=14+(frame/7)%2;break;
+            case WALK:index=4+(frame/3)%4;break;
+            case RUN:index=8+frame%4;break;
+            case BALL:index=12+(frame/3)%2;break;
+            case HUNGRY:index=14;break;
+            case EAT:index=15;break;
+            case AFFECTION:index=16;break;
+            case PETTED:index=17;break;
+            case SLEEP:index=18+(frame/7)%2;break;
             default:index=(frame/7)%4;break;
         }
         float size=dp(action==Action.RUN||action==Action.WALK||action==Action.BALL?142:136);
@@ -95,15 +96,6 @@ final class PixelPetView extends View {
         paint.setColor(Color.WHITE);
         c.save();if(facingRight)c.scale(-1,1,getWidth()/2f,getHeight()/2f);
         c.drawBitmap(sprites[index],null,target,paint);c.restore();
-    }
-
-    private void drawBubble(Canvas c){
-        String message=null;
-        if(action==Action.HUNGRY)message="Lapar... 🍗";else if(action==Action.AFFECTION)message="Elus aku ♡";
-        else if(action==Action.SLEEP)message="Zz...";else if(action==Action.BALL)message="Main bola!";
-        if(message==null||menuOpen)return;
-        paint.setColor(0xF7FFF8EF);c.drawRoundRect(new RectF(dp(23),dp(10),getWidth()-dp(23),dp(46)),dp(14),dp(14),paint);
-        text(c,message,getWidth()/2f,dp(34),dp(14),Color.rgb(70,58,68));
     }
 
     private void drawGroundShadow(Canvas c){
