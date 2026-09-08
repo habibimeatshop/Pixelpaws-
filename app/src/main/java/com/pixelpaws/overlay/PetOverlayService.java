@@ -31,12 +31,15 @@ public class PetOverlayService extends Service {
         params=new WindowManager.LayoutParams(petWidth,petHeight,WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,PixelFormat.TRANSLUCENT);
         params.gravity=Gravity.TOP|Gravity.START;params.x=Math.max(0,(screenWidth-petWidth)/2);params.y=bottomY();
-        petView=new PixelPetView(this,state,(dx,dy,userDrag)->movePet(dx,userDrag));windowManager.addView(petView,params);handler.postDelayed(decay,60000);
+        petView=new PixelPetView(this,state,this::movePet);windowManager.addView(petView,params);handler.postDelayed(decay,60000);
     }
-    private void movePet(float dx,boolean userDrag){
-        if(petView==null)return;int nextX=params.x+Math.round(dx);
+    private boolean movePet(float dx,float dy,boolean userDrag){
+        if(petView==null)return true;int nextX=params.x+Math.round(dx);
         if(nextX<0||nextX>screenWidth-petWidth){nextX=Math.max(0,Math.min(screenWidth-petWidth,nextX));if(!userDrag)petView.turnAround();}
-        params.x=nextX;params.y=bottomY();windowManager.updateViewLayout(petView,params);
+        params.x=nextX;
+        if(userDrag||dy>0)params.y=Math.max(0,Math.min(bottomY(),params.y+Math.round(dy)));
+        else params.y=bottomY();
+        windowManager.updateViewLayout(petView,params);return params.y>=bottomY();
     }
     private int bottomY(){return Math.max(0,screenHeight-petHeight-dp(20));}
     private void createChannel(){NotificationChannel channel=new NotificationChannel(CHANNEL,"Pixel pet aktif",NotificationManager.IMPORTANCE_LOW);channel.setDescription("Diperlukan Android agar pet tetap tampil di layar");getSystemService(NotificationManager.class).createNotificationChannel(channel);}

@@ -13,25 +13,28 @@ import android.view.View;
 import java.util.Random;
 
 final class PixelPetView extends View {
-    interface MotionListener { void moveBy(float dx, float dy, boolean userDrag); }
-    private enum Action { IDLE, WALK, RUN, BALL, HUNGRY, EAT, AFFECTION, PETTED, SLEEP }
+    interface MotionListener { boolean moveBy(float dx, float dy, boolean userDrag); }
+    private enum Action { IDLE, WALK, RUN, BALL, HUNGRY, EAT, AFFECTION, PETTED, SLEEP, HELD, FALL, LAND }
 
     private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
     private final PetState state;
     private final MotionListener motionListener;
     private final Random random=new Random();
-    private final Bitmap[] sprites=new Bitmap[20];
+    private final Bitmap[] sprites=new Bitmap[33];
     private final int[] spriteIds={
             R.drawable.cat_idle_1,R.drawable.cat_idle_2,R.drawable.cat_idle_3,R.drawable.cat_idle_4,
             R.drawable.cat_walk_1,R.drawable.cat_walk_2,R.drawable.cat_walk_3,R.drawable.cat_walk_4,
             R.drawable.cat_run_1,R.drawable.cat_run_2,R.drawable.cat_run_3,R.drawable.cat_run_4,
             R.drawable.cat_ball_1,R.drawable.cat_ball_2,R.drawable.cat_hungry,R.drawable.cat_eat,
-            R.drawable.cat_affection,R.drawable.cat_petted,R.drawable.cat_sleep_1,R.drawable.cat_sleep_2
+            R.drawable.cat_affection,R.drawable.cat_petted,R.drawable.cat_sleep_1,R.drawable.cat_sleep_2,
+            R.drawable.cat_held_1,R.drawable.cat_held_2,R.drawable.cat_held_3,R.drawable.cat_held_4,R.drawable.cat_held_5,
+            R.drawable.cat_fall_1,R.drawable.cat_fall_2,R.drawable.cat_fall_3,R.drawable.cat_fall_4,
+            R.drawable.cat_fall_5,R.drawable.cat_fall_6,R.drawable.cat_fall_7,R.drawable.cat_fall_8
     };
     private float downX,downY,lastRawX,lastRawY;
     private long downAt,actionUntil;
     private boolean moved,menuOpen,facingRight=true;
-    private int frame;
+    private int frame,fallFrame;
     private Action action=Action.IDLE;
 
     PixelPetView(Context context,PetState state,MotionListener listener){
@@ -44,8 +47,16 @@ final class PixelPetView extends View {
     private final Runnable animator=new Runnable(){
         @Override public void run(){
             frame++;long now=SystemClock.uptimeMillis();
-            if(now>=actionUntil)chooseNextAction(now);
-            if(!moved&&!menuOpen){
+            if(action==Action.FALL){
+                if(fallFrame<4)fallFrame++;
+                if(motionListener.moveBy(0,dp(12),false)){
+                    action=Action.LAND;fallFrame=5;frame=0;actionUntil=now+720;
+                }
+            }else if(action==Action.LAND){
+                fallFrame=5+Math.min(2,frame/3);
+                if(now>=actionUntil){action=Action.IDLE;frame=0;actionUntil=now+1800;}
+            }else if(action!=Action.HELD&&now>=actionUntil)chooseNextAction(now);
+            if(action!=Action.HELD&&action!=Action.FALL&&action!=Action.LAND&&!moved&&!menuOpen){
                 float speed=action==Action.RUN?dp(3.5f):(action==Action.WALK||action==Action.BALL?dp(1.5f):0f);
                 if(speed>0)motionListener.moveBy(facingRight?speed:-speed,0,false);
             }
@@ -70,7 +81,9 @@ final class PixelPetView extends View {
     void turnAround(){facingRight=!facingRight;}
 
     @Override protected void onDraw(Canvas c){
-        super.onDraw(c);if(menuOpen)drawMenu(c);drawGroundShadow(c);drawCat(c);
+        super.onDraw(c);if(menuOpen)drawMenu(c);
+        if(action!=Action.HELD&&action!=Action.FALL)drawGroundShadow(c);
+        drawCat(c);
     }
 
     private void drawCat(Canvas c){
@@ -84,9 +97,13 @@ final class PixelPetView extends View {
             case AFFECTION:index=16;break;
             case PETTED:index=17;break;
             case SLEEP:index=18+(frame/7)%2;break;
+            case HELD:index=20+(frame/3)%5;break;
+            case FALL:index=25+Math.min(4,fallFrame);break;
+            case LAND:index=25+Math.max(5,Math.min(7,fallFrame));break;
             default:index=(frame/7)%4;break;
         }
-        float size=dp(action==Action.RUN||action==Action.WALK||action==Action.BALL?142:136);
+        float size=dp(action==Action.HELD||action==Action.FALL||action==Action.LAND?148:
+                (action==Action.RUN||action==Action.WALK||action==Action.BALL?142:136));
         float left=(getWidth()-size)/2f,top=getHeight()-size-dp(2);
         RectF target=new RectF(left,top,left+size,top+size);
         // The source artwork faces left. Mirror it only when travelling right.
@@ -130,10 +147,18 @@ final class PixelPetView extends View {
                 downAt=SystemClock.uptimeMillis();moved=false;return true;
             case MotionEvent.ACTION_MOVE:
                 float dx=e.getRawX()-lastRawX,dy=e.getRawY()-lastRawY;
-                if(Math.abs(e.getX()-downX)>dp(5)||Math.abs(e.getY()-downY)>dp(5))moved=true;
+                if(Math.abs(e.getX()-downX)>dp(5)||Math.abs(e.getY()-downY)>dp(5)){
+                    if(!moved){frame=0;menuOpen=false;}
+                    moved=true;action=Action.HELD;
+                }
                 if(moved)motionListener.moveBy(dx,dy,true);lastRawX=e.getRawX();lastRawY=e.getRawY();return true;
             case MotionEvent.ACTION_UP:
-                if(!moved)handleTap(e.getX(),e.getY(),SystemClock.uptimeMillis()-downAt);moved=false;return true;
+                if(!moved)handleTap(e.getX(),e.getY(),SystemClock.uptimeMillis()-downAt);
+                else{action=Action.FALL;fallFrame=0;frame=0;actionUntil=Long.MAX_VALUE;}
+                moved=false;invalidate();return true;
+            case MotionEvent.ACTION_CANCEL:
+                if(moved){action=Action.FALL;fallFrame=0;frame=0;actionUntil=Long.MAX_VALUE;}
+                moved=false;invalidate();return true;
             default:return true;
         }
     }
