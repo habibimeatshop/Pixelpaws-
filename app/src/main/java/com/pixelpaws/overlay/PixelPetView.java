@@ -31,9 +31,9 @@ final class PixelPetView extends View {
             R.drawable.cat_fall_1,R.drawable.cat_fall_2,R.drawable.cat_fall_3,R.drawable.cat_fall_4,
             R.drawable.cat_fall_5,R.drawable.cat_fall_6,R.drawable.cat_fall_7,R.drawable.cat_fall_8
     };
-    private float downX,downY,lastRawX,lastRawY;
+    private float downX,downY,downRawX,downRawY,lastRawX,lastRawY;
     private long downAt,actionUntil;
-    private boolean moved,menuOpen,facingRight=true;
+    private boolean moved,lifted,chasing,menuOpen,facingRight=true;
     private int frame,fallFrame;
     private Action action=Action.IDLE;
 
@@ -143,24 +143,50 @@ final class PixelPetView extends View {
     @Override public boolean onTouchEvent(MotionEvent e){
         switch(e.getActionMasked()){
             case MotionEvent.ACTION_DOWN:
-                downX=e.getX();downY=e.getY();lastRawX=e.getRawX();lastRawY=e.getRawY();
-                downAt=SystemClock.uptimeMillis();moved=false;return true;
+                downX=e.getX();downY=e.getY();downRawX=e.getRawX();downRawY=e.getRawY();
+                lastRawX=downRawX;lastRawY=downRawY;
+                downAt=SystemClock.uptimeMillis();moved=false;lifted=false;chasing=false;return true;
             case MotionEvent.ACTION_MOVE:
                 float dx=e.getRawX()-lastRawX,dy=e.getRawY()-lastRawY;
                 if(Math.abs(e.getX()-downX)>dp(5)||Math.abs(e.getY()-downY)>dp(5)){
                     if(!moved){frame=0;menuOpen=false;}
-                    moved=true;action=Action.HELD;
+                    moved=true;
+                    float totalX=e.getRawX()-downRawX,totalY=e.getRawY()-downRawY;
+                    if(!lifted&&!chasing){
+                        lifted=Math.abs(totalY)>Math.abs(totalX)*0.75f;
+                        chasing=!lifted;
+                    }
                 }
-                if(moved)motionListener.moveBy(dx,dy,true);lastRawX=e.getRawX();lastRawY=e.getRawY();return true;
+                if(lifted){action=Action.HELD;motionListener.moveBy(dx,dy,true);}
+                else if(chasing){
+                    action=Action.RUN;
+                    if(Math.abs(dx)>0.2f)facingRight=dx>0;
+                    motionListener.moveBy(dx*.62f,0,false);
+                }
+                lastRawX=e.getRawX();lastRawY=e.getRawY();return true;
             case MotionEvent.ACTION_UP:
                 if(!moved)handleTap(e.getX(),e.getY(),SystemClock.uptimeMillis()-downAt);
-                else{action=Action.FALL;fallFrame=0;frame=0;actionUntil=Long.MAX_VALUE;}
-                moved=false;invalidate();return true;
+                else if(lifted){action=Action.FALL;fallFrame=0;frame=0;actionUntil=Long.MAX_VALUE;}
+                else{action=Action.RUN;frame=0;actionUntil=SystemClock.uptimeMillis()+650;}
+                moved=false;lifted=false;chasing=false;invalidate();return true;
             case MotionEvent.ACTION_CANCEL:
-                if(moved){action=Action.FALL;fallFrame=0;frame=0;actionUntil=Long.MAX_VALUE;}
-                moved=false;invalidate();return true;
+                if(lifted){action=Action.FALL;fallFrame=0;frame=0;actionUntil=Long.MAX_VALUE;}
+                moved=false;lifted=false;chasing=false;invalidate();return true;
             default:return true;
         }
+    }
+
+    @Override public boolean onHoverEvent(MotionEvent e){
+        if(e.getActionMasked()==MotionEvent.ACTION_HOVER_MOVE){
+            float offset=e.getX()-getWidth()/2f;
+            if(Math.abs(offset)>dp(10)){
+                facingRight=offset>0;action=Action.RUN;frame++;
+                actionUntil=SystemClock.uptimeMillis()+500;
+                motionListener.moveBy(facingRight?dp(4):-dp(4),0,false);invalidate();
+            }
+            return true;
+        }
+        return super.onHoverEvent(e);
     }
 
     private void handleTap(float x,float y,long duration){
